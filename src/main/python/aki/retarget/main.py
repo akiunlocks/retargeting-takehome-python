@@ -1,4 +1,7 @@
 import logging as log
+
+from starlette.staticfiles import StaticFiles
+
 log.basicConfig(level=log.INFO)
 
 import uvicorn
@@ -14,6 +17,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.mount('/assets', StaticFiles(directory='/Users/alexbelyansky/eyeview/akiworkspace/retargeting-takehome-python/assets'), name='assets')
 
 @app.get('/_status')
 def health_check():

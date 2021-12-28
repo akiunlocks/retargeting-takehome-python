@@ -1,0 +1,34 @@
+<html>
+<head>
+    <title>sports goods</title>
+</head>
+<body>
+
+<table>
+    <thead>
+        <tr>
+            <td align="center" colspan="2" style="font-size:30px"> Store Catalog  </td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+                <div class="img-with-text">
+                    <a href="/web/storecatalog/grilling" target="_blank">
+                        <img title="grill" alt="unknown" src="{{ url_for('assets', path=grillpath) }}">
+                        <p align="center" style="font-size:20px"> Grilling Items </p>
+                    </a>
+                </div>
+            </td>
+            <td>
+                <div class="img-with-text">
+                    <a href="/web/storecatalog/sports">
+                        <img src="{{ url_for('assets', path=sportspath) }}" alt="unknown" onclick="">
+                        <p align="center" style="font-size:20px"> Sports Items </p>
+                    </a>
+                </div>
+            </td>
+        </tr>
+
+    </tbody>
+</table>
