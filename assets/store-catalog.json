@@ -1,0 +1,28 @@
+{"products":
+  [
+    {
+      "id": "prbskl",
+      "name":"basketball",
+      "filename": "basketball.jpeg",
+      "category": "sports"
+    },
+    {
+      "id": "prbk",
+      "name": "bike",
+      "category": "sports",
+      "filename": "bike.jpeg"
+    },
+    {
+      "id": "prgrl",
+      "name": "grill",
+      "filename": "weber-grill.jpeg",
+      "category": "grilling"
+    },
+    {
+      "id": "prutsl",
+      "name": "utensils",
+      "filename": "grill-utensils.jpeg",
+      "category": "grilling"
+    }
+  ]
+}

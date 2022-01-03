@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Aki Store Catalog</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+<body>
+<table>
+    <thead>
+        <tr>
+            <td align="center" colspan="2" style="font-size:30px"> Store Catalog  </td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            {% for product in products %}
+            <td>
+                <div class="img-with-text">
+                    <a href="#" onclick="$.get('/web/productclicked/{{product.id}}')">
+                        <img src="{{ url_for('assets', path=product.filename) }}" alt="unknown">
+                        <p align="center" style="font-size:20px"> {{product.name}} </p>
+                    </a>
+                </div>
+            </td>
+            {% endfor %}
+        </tr>
+
+    </tbody>
+</table>
+
+</body>
+</html>

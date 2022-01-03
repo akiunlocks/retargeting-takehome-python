@@ -5,9 +5,9 @@ from fastapi.responses import HTMLResponse
 from fastapi import APIRouter, Request, Response, Cookie
 from starlette.templating import Jinja2Templates
 
-templates = Jinja2Templates(directory='/Users/alexbelyansky/eyeview/akiworkspace/retargeting-takehome-python/html')
+from aki.retarget.core import CACHE
 
-cache = {}
+templates = Jinja2Templates(directory='/Users/alexbelyansky/eyeview/akiworkspace/retargeting-takehome-python/html')
 
 def init_routes():
     router = APIRouter()
@@ -15,6 +15,11 @@ def init_routes():
     @router.get("/errorpage", response_class=HTMLResponse)
     def show_error_page(request: Request):
         return templates.TemplateResponse('error.html', {'request': request})
+
+    @router.get('/productclicked/{product_id}')
+    def product_clicked(product_id: str):
+
+        return {}
 
     @router.get("/storecatalog", response_class=HTMLResponse)
     def show_store_catalog(request: Request):
@@ -28,23 +33,24 @@ def init_routes():
 
 
     @router.get("/storecatalog/{category}", response_class=HTMLResponse)
-    def show_store_catalog_category(category:str, request: Request, response: Response, akiutype: Optional[str] = Cookie(None)):
+    def show_store_catalog_category(request: Request, response: Response, category: str, akiutype: Optional[str] = Cookie(None)):
         if (category == 'sports'):
             if not akiutype:
                 response.set_cookie(key='akiutype', value='sportsfan', expires=60)
-            return templates.TemplateResponse(
-                'sports.html',
-                {
-                    'request': Request,
 
-                }
-            )
         elif (category == 'grilling'):
             if not akiutype:
                 response.set_cookie(key='akiutype', value='grillmaster', expires=60)
-            return show_store_catalog(request)
+
         else:
             return show_error_page(request)
+
+        return templates.TemplateResponse(
+            'catalog.html',
+            {
+                'request': request,
+                'products': CACHE['catalog'][category]
+            })
 
 
     @router.get("/fetchad")
