@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse
 from fastapi import APIRouter, Request, Response, Cookie
 from starlette.templating import Jinja2Templates
 
-from aki.retarget.core import CACHE
+from aki.retarget.core import Services
 
 templates = Jinja2Templates(directory='/Users/alexbelyansky/eyeview/akiworkspace/retargeting-takehome-python/html')
 
@@ -31,6 +31,14 @@ def init_routes():
                 'sportspath': 'bike.jpeg'
             })
 
+    def show_error_page(request: Request, errormsg: str):
+        return templates.TemplateResponse(
+            'error.html',
+            {
+                'request': request,
+                'errormsg': errormsg
+            }
+        )
 
     @router.get("/storecatalog/{category}", response_class=HTMLResponse)
     def show_store_catalog_category(request: Request, response: Response, category: str, akiutype: Optional[str] = Cookie(None)):
@@ -49,18 +57,17 @@ def init_routes():
             'catalog.html',
             {
                 'request': request,
-                'products': CACHE['catalog'][category]
+                'products': Services.Cache['products_by_category'][category]
             })
 
 
     @router.get("/fetchad")
     def fetch_ad(akiutype: Optional[str] = Cookie(None)):
         log.info('fetching ad for user ' + str(akiutype))
-        if not akiutype:
-            return {'ad': 'default ad'}
+        ad = Services.Cache['products_by_category']['default'][0]
 
         if akiutype == 'sportsfan':
-            return {'ad': 'sports ad'}
+
         if akiutype == 'grillmaster':
             return {'ad': 'grilling ad'}
 

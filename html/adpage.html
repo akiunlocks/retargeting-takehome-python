@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Quote of the day with an ad</title>
+    <script type="text/javascript" src="https://www.brainyquote.com/link/quotebr.js"></script>
+</head>
+<body>
+<center>
+    <div class="img-with-text">
+                    <a href="#" onclick="$.get('/web/adclicked/{{product.id}}')">
+                        <img src="{{ url_for('assets', path=product.filename) }}" alt="unknown">
+                        <p align="center" style="font-size:20px"> {{product.name}} </p>
+                    </a>
+                </div>
+    <div>
+
+    </div>
+</center>
+</body>
+</html>

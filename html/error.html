@@ -5,6 +5,9 @@
     <title>Error</title>
 </head>
 <body>
-    <img src="{{url_for('assets', src='error-message.png') }}">
+    <center>
+        <img src="{{url_for('assets', src='error-message.png') }}">
+        {{errormsg}}
+    </center>
 </body>
 </html>
