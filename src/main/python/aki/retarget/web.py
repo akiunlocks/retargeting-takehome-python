@@ -1,11 +1,13 @@
 import logging as log
-from typing import Optional
+import random
+from typing import Optional, List
 
 from fastapi.responses import HTMLResponse
 from fastapi import APIRouter, Request, Response, Cookie
 from starlette.templating import Jinja2Templates
 
-from aki.retarget.core import Services
+from aki.retarget import core
+from aki.retarget.core import Services, Config
 
 templates = Jinja2Templates(directory='/Users/alexbelyansky/eyeview/akiworkspace/retargeting-takehome-python/html')
 
@@ -40,37 +42,64 @@ def init_routes():
             }
         )
 
-    @router.get("/storecatalog/{category}", response_class=HTMLResponse)
-    def show_store_catalog_category(request: Request, response: Response, category: str, akiutype: Optional[str] = Cookie(None)):
-        if (category == 'sports'):
-            if not akiutype:
-                response.set_cookie(key='akiutype', value='sportsfan', expires=60)
+    def show_product_ad_page(request: Request, product: dict):
+        return templates.TemplateResponse(
+            'adpage.html',
+            {
+                'request': request,
+                'product': product
+            }
+        )
 
-        elif (category == 'grilling'):
-            if not akiutype:
-                response.set_cookie(key='akiutype', value='grillmaster', expires=60)
-
-        else:
-            return show_error_page(request)
-
+    def show_product_catalog_page(request, products: List):
         return templates.TemplateResponse(
             'catalog.html',
             {
                 'request': request,
-                'products': Services.Cache['products_by_category'][category]
+                'products': products
             })
 
+    @router.get("/storecatalog/{category}", response_class=HTMLResponse)
+    def show_store_catalog_category(request: Request, response: Response, category: str, akiuser: Optional[str] = Cookie(None)):
+        if category not in Config.SUPPOTED_CATEGORIES:
+            return show_error_page()
 
-    @router.get("/fetchad")
-    def fetch_ad(akiutype: Optional[str] = Cookie(None)):
-        log.info('fetching ad for user ' + str(akiutype))
-        ad = Services.Cache['products_by_category']['default'][0]
+        if not akiuser:
+            akiuser = core.generate_uuid()
+            response.set_cookie(key='akiuser', value=akiuser, expires=300)
+            Services.DB['users_by_id'][akiuser] = akiuser
 
-        if akiutype == 'sportsfan':
+        user_info = Services.DB['users_by_id'][akiuser]
+        user_info.categories.add(category)
+        Services.DB['users_by_id'][akiuser] = user_info
 
-        if akiutype == 'grillmaster':
-            return {'ad': 'grilling ad'}
+        return show_product_catalog_page(request, Services.Cache['products_by_category'][category])
 
-        return {'ad': 'default ad'}
+
+    @router.get("/fetchad", response_class=HTMLResponse)
+    def fetch_ad(request: Request, akiuserid: Optional[str] = Cookie(None)):
+        log.info('fetching ad for user ' + str(akiuserid))
+        product = Services.Cache['products_by_category']['default'][0]
+
+
+        if akiuserid:
+            akiuser = Services.DB['users_by_id'][akiuserid]
+            if akiuser.products_clicked:
+                db_products_clicked = Services.Cache['products_by_id'].keys() & akiuser.roducts_clicked
+                if db_products_clicked:
+                    # we have a specific product in our catalog that was clicked
+                    product = Services.Cache['products_by_id'][db_products_clicked[0]]
+
+                    return show_product_ad_page(request, product)
+
+            if akiuser.categories:
+                db_categories_visited = Services.Cache['products_by_category'].keys() & akiuser.categories
+                if db_categories_visited:
+                    # we have a product category that user visited
+                    product = Services.Cache['products_by_category'][db_categories_visited[0]]
+
+                    return show_product_ad_page(request, product)
+
+        return show_product_ad_page(request, product)
 
     return router

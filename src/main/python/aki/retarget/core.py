@@ -3,7 +3,6 @@ import os
 import itertools as itools
 import uuid
 from sqlitedict import SqliteDict
-
 class Config:
     PROJECT_HOME_DIR = None
     ASSETS_DIR = None
@@ -12,6 +11,11 @@ class Config:
 class Services:
     Cache: dict
     DB: SqliteDict
+
+class User:
+    def __init__(self):
+        self.categories = set()
+        self.products_clicked = set()
 
 def generate_uuid():
     return uuid.uuid4()
