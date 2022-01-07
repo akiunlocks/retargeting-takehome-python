@@ -1,31 +1,32 @@
-import logging as log
-import random
+import sys
 from typing import Optional, List
+import logging
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+logger = logging.getLogger()
 
 from fastapi.responses import HTMLResponse
 from fastapi import APIRouter, Request, Response, Cookie
-from starlette.templating import Jinja2Templates
 
 from aki.retarget import core
-from aki.retarget.core import Services, Config
+from aki.retarget.core import Services, Config, User, Product
 
-templates = Jinja2Templates(directory='/Users/alexbelyansky/eyeview/akiworkspace/retargeting-takehome-python/html')
 
 def init_routes():
     router = APIRouter()
 
     @router.get("/errorpage", response_class=HTMLResponse)
     def show_error_page(request: Request):
-        return templates.TemplateResponse('error.html', {'request': request})
+        return Services.Templates.TemplateResponse('error.html', {'request': request})
 
     @router.get('/productclicked/{product_id}')
-    def product_clicked(product_id: str):
-
+    def product_clicked(product_id: str,  akiuserid: Optional[str] = Cookie(None)):
+        Services.DB['users_by_id'][akiuserid].products_clicked.add(product_id)
+        logger.info('product ' + product_id + ' added for user ' + akiuserid)
         return {}
 
     @router.get("/storecatalog", response_class=HTMLResponse)
     def show_store_catalog(request: Request):
-        return templates.TemplateResponse(
+        return Services.Templates.TemplateResponse(
             'store-catalog.html',
             {
                 'request': request,
@@ -34,7 +35,7 @@ def init_routes():
             })
 
     def show_error_page(request: Request, errormsg: str):
-        return templates.TemplateResponse(
+        return Services.Templates.TemplateResponse(
             'error.html',
             {
                 'request': request,
@@ -42,8 +43,9 @@ def init_routes():
             }
         )
 
-    def show_product_ad_page(request: Request, product: dict):
-        return templates.TemplateResponse(
+    def show_product_ad_page(request: Request, product: Product, userid: str = "default"):
+        Services.CACHE.user[str].product_advertised[product.id] += 1
+        return Services.Templates.TemplateResponse(
             'adpage.html',
             {
                 'request': request,
@@ -51,8 +53,8 @@ def init_routes():
             }
         )
 
-    def show_product_catalog_page(request, products: List):
-        return templates.TemplateResponse(
+    def show_product_catalog_page(request: Request, products: List):
+        return Services.Templates.TemplateResponse(
             'catalog.html',
             {
                 'request': request,
@@ -60,43 +62,47 @@ def init_routes():
             })
 
     @router.get("/storecatalog/{category}", response_class=HTMLResponse)
-    def show_store_catalog_category(request: Request, response: Response, category: str, akiuser: Optional[str] = Cookie(None)):
+    def show_store_catalog_category(request: Request, category: str, akiuserid: Optional[str] = Cookie(None)):
         if category not in Config.SUPPOTED_CATEGORIES:
             return show_error_page()
 
-        if not akiuser:
-            akiuser = core.generate_uuid()
-            response.set_cookie(key='akiuser', value=akiuser, expires=300)
-            Services.DB['users_by_id'][akiuser] = akiuser
+        response = show_product_catalog_page(request, Services.CACHE.products_by_category[category])
+        if not akiuserid:
+            akiuserid = core.generate_uuid()
+            response.set_cookie(key='akiuserid', value=akiuserid)
 
-        user_info = Services.DB['users_by_id'][akiuser]
+        user_info = Services.DB['users_by_id'][akiuserid]
         user_info.categories.add(category)
-        Services.DB['users_by_id'][akiuser] = user_info
+        logger.info(f'category {category} added for user {akiuserid}')
 
-        return show_product_catalog_page(request, Services.Cache['products_by_category'][category])
+        return response
 
 
-    @router.get("/fetchad", response_class=HTMLResponse)
+    @router.get("/quoteoftheday", response_class=HTMLResponse)
     def fetch_ad(request: Request, akiuserid: Optional[str] = Cookie(None)):
-        log.info('fetching ad for user ' + str(akiuserid))
-        product = Services.Cache['products_by_category']['default'][0]
-
+        logger.info('fetching ad for user ' + str(akiuserid))
+        product = Services.CACHE.products_by_category['default'][0]
+        product['product_url'] = '/assets/' + product['filename']
 
         if akiuserid:
             akiuser = Services.DB['users_by_id'][akiuserid]
             if akiuser.products_clicked:
-                db_products_clicked = Services.Cache['products_by_id'].keys() & akiuser.roducts_clicked
+                db_products_clicked = Services.CACHE.promotions_by_product_id.keys() & akiuser.products_clicked
+
                 if db_products_clicked:
                     # we have a specific product in our catalog that was clicked
-                    product = Services.Cache['products_by_id'][db_products_clicked[0]]
+                    chosen_product_id = next(iter(db_products_clicked))
+                    product = Services.CACHE.promotions_by_product_id[chosen_product_id]
 
                     return show_product_ad_page(request, product)
 
             if akiuser.categories:
-                db_categories_visited = Services.Cache['products_by_category'].keys() & akiuser.categories
+                catalog_categories = set(Services.CACHE.promotions_by_category.keys())
+                db_categories_visited = catalog_categories & akiuser.categories
                 if db_categories_visited:
                     # we have a product category that user visited
-                    product = Services.Cache['products_by_category'][db_categories_visited[0]]
+                    chosen_category = next(iter(db_categories_visited))
+                    product = next(iter(Services.CACHE.promotions_by_category[chosen_category]))
 
                     return show_product_ad_page(request, product)
 

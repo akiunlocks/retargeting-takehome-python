@@ -3,31 +3,31 @@
     {
       "id": "prbskl",
       "name":"basketball",
-      "filename": "basketball.jpeg",
+      "src": "basketball.jpeg",
       "category": "sports"
     },
     {
       "id": "prbk",
       "name": "bike",
       "category": "sports",
-      "filename": "bike.jpeg"
+      "src": "bike.jpeg"
     },
     {
       "id": "prgrl",
       "name": "grill",
-      "filename": "weber-grill.jpeg",
+      "src": "weber-grill.jpeg",
       "category": "grilling"
     },
     {
       "id": "prutsl",
-      "name": "utensils",
-      "filename": "grill-utensils.jpeg",
+      "name": "grill utensils",
+      "src": "grill-utensils.jpeg",
       "category": "grilling"
     },
     {
       "id": "akiad",
       "name": "akilogo",
-      "filename": "default-aki-ad.jpeg",
+      "src": "default-aki-ad.jpeg",
       "category": "default"
     }
   ]
