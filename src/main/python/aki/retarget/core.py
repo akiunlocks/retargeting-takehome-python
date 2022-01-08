@@ -5,6 +5,7 @@ import sys
 import uuid
 from collections import defaultdict, OrderedDict, Counter
 from dataclasses import dataclass
+from typing import List, Iterable
 
 import requests
 from sqlitedict import SqliteDict
@@ -16,6 +17,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 logger = logging.getLogger()
 
 class Config:
+    FREQ_CAP_LIMIT = 1
     PROJECT_HOME_DIR = None
     ASSETS_DIR = None
     SUPPOTED_CATEGORIES = ['sports','grilling']
@@ -28,18 +30,37 @@ class Product:
     src: str
     category: str
 
+    promotion_to_product = {
+        'product_id' : 'id',
+        'product_name' : 'name',
+        'product_category' : 'category',
+        'product_url' : 'src'
+    }
+
     @property
     def has_local_asset(self):
         return not self.src.startswith('http')
+
+    @classmethod
+    def from_promotion(cls, prom_data: dict):
+        traslated_data = {}
+        for prom_name, prod_name in cls.promotion_to_product.items():
+            traslated_data[prod_name] = prom_data[prom_name].strip()
+
+        return cls(**traslated_data)
 
 class User:
     def __init__(self):
         self.categories = set()
         self.products_clicked = set()
-        self.product_advertised = defaultdict(int)
+        self.products_advertised = defaultdict(int)
+
+    def get_non_freq_capped_products(self, products: Iterable[Product]):
+        return list(filter(lambda x: self.products_advertised[x.id] <= Config.FREQ_CAP_LIMIT, products))
+
 
 class Cache:
-    user = defaultdict(User)
+    users = defaultdict(User)
     products_by_category: OrderedDict = OrderedDict()
     products_by_id: dict = {}
     promotions_by_category: dict = defaultdict(list)
@@ -48,7 +69,6 @@ class Cache:
 
 class Services:
     CACHE = Cache
-    DB: dict = {} # assuming in memory storage for this exercise
     Templates: Jinja2Templates
 
 def generate_uuid():
@@ -75,7 +95,7 @@ def load_promotions(url):
     row_iter = DictReader(rows)
 
     for row in row_iter:
-        Services.CACHE.promotions_by_category[row['product_category']].append(row)
-        Services.CACHE.promotions_by_product_id[row['product_id']] = row
+        Services.CACHE.promotions_by_category[row['product_category']].append(Product.from_promotion(row))
+        Services.CACHE.promotions_by_product_id[row['product_id']] = Product.from_promotion(row)
 
     logger.info('processed ' + str(len(rows)) + ' rows from promotions feed')

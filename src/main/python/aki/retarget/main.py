@@ -60,7 +60,6 @@ def run_scheduler():
 log.info('initialized web endpoints')
 
 if __name__ == '__main__':
-    Services.DB['users_by_id'] = defaultdict(User)
     prom_load_fn = functools.partial(core.load_promotions, Config.PROMOTIONS_FEED_URL)
     prom_load_fn()
     # schedule promotions feed download
