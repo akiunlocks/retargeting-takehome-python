@@ -9,15 +9,15 @@ import functools
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
-from aki.retarget import core
+from aki.retarget import controller
 
 log.basicConfig(level=log.INFO)
 import uvicorn
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from aki.retarget.web import init_routes as init_web_routes
-from aki.retarget.core import Config, load_catalog, Services, User
+from aki.retarget.view import init_routes as init_web_routes
+from aki.retarget.controller import Config, Services
 
 app = FastAPI()
 app.add_middleware(
@@ -50,7 +50,8 @@ def home():
 
 @app.on_event("startup")
 async def startup_event():
-    load_catalog()
+    controller.load_catalog()
+    controller.load_promotions(Config.PROMOTIONS_FEED_URL)
 
 def run_scheduler():
     while True:
@@ -60,10 +61,4 @@ def run_scheduler():
 log.info('initialized web endpoints')
 
 if __name__ == '__main__':
-    prom_load_fn = functools.partial(core.load_promotions, Config.PROMOTIONS_FEED_URL)
-    prom_load_fn()
-    # schedule promotions feed download
-    # schedule.every(1).minutes.do(prom_load_fn)
-    # threading.Thread(target=run_scheduler, name="scheduler", daemon=True).start()
-
     uvicorn.run("main:app", host='0.0.0.0', access_log=False)

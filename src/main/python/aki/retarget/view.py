@@ -1,15 +1,17 @@
 import sys
 from typing import Optional, List
 import logging
+
+from aki.retarget.controller import Services
+from aki.retarget.model import Product, Config
+
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 logger = logging.getLogger()
 
 from fastapi.responses import HTMLResponse
 from fastapi import APIRouter, Request, Response, Cookie
 
-from aki.retarget import core
-from aki.retarget.core import Services, Config, User, Product
-
+from aki.retarget import controller
 
 def init_routes():
     router = APIRouter()
@@ -68,7 +70,7 @@ def init_routes():
 
         response = show_product_catalog_page(request, Services.CACHE.products_by_category[category])
         if not akiuserid:
-            akiuserid = core.generate_uuid()
+            akiuserid = controller.generate_uuid()
             response.set_cookie(key='akiuserid', value=akiuserid)
 
         user_info = Services.CACHE.users[akiuserid]
